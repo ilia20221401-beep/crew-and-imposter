@@ -1,0 +1,167 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Crew &amp; Impostor</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10141f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#10141f;color:#f3efe6;font:16px "Trebuchet MS",Verdana,sans-serif;overflow:hidden;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;object-fit:contain}
+.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#10141ff2;z-index:5;padding:16px;text-align:center}
+.h{display:none!important}
+h1{font:800 44px/1 Impact,"Arial Black",sans-serif;letter-spacing:1px;margin:0}
+button,input{font:inherit;padding:10px 16px;border-radius:6px;border:2px solid #f3efe6}
+input{background:#1d2335;color:#f3efe6}
+button{background:#f3efe6;color:#10141f;font-weight:700;cursor:pointer}
+button:disabled{opacity:.4}button:focus-visible,input:focus-visible{outline:3px solid #ffd600}
+#hud{position:fixed;top:8px;left:8px;right:8px;z-index:2;pointer-events:none}
+#bar{height:10px;background:#2b3245;border-radius:5px;overflow:hidden;margin-top:4px}
+#bf{height:100%;width:0;background:#43a047;transition:width .3s}
+#btns{position:fixed;right:12px;bottom:12px;display:flex;gap:8px;z-index:3}
+#btns button{min-width:84px;height:56px}
+#mp button{display:block;width:260px;margin:4px auto;text-align:left}
+#chat{width:min(420px,90vw);height:110px;overflow:auto;background:#1d2335;border-radius:6px;padding:6px;text-align:left;font-size:14px}
+</style></head><body>
+<canvas id="cv" width="1200" height="800"></canvas>
+<div id="hud" class="h"><span id="info"></span><div id="bar"><div id="bf"></div></div></div>
+<div id="btns" class="h"><button id="bUse">Use</button><button id="bKill" style="background:#e53935;color:#fff">Kill</button><button id="bRep" style="background:#fb8c00">Report</button></div>
+<div id="menu" class="ov"><h1>Crew &amp; Impostor</h1>
+<input id="name" placeholder="Your name" maxlength="12"><select id="net" style="padding:10px;border-radius:6px;background:#1d2335;color:#f3efe6;border:2px solid #f3efe6"><option value="peer">PeerJS</option><option value="mqtt">Relay (if PeerJS is blocked)</option></select><button id="host">Host a game</button>
+<div><input id="code2" placeholder="Room code" maxlength="5" style="width:130px;text-transform:uppercase"> <button id="join">Join</button></div>
+<p id="msg"></p><small>Needs 3+ players. Open extra tabs to test. Move: WASD / arrows or drag. Use: E. Kill: Q. Report: R.</small></div>
+<div id="lobby" class="h ov"><h2>Room code: <span id="code"></span></h2><ul id="plist" style="list-style:none;padding:0;font-weight:700"></ul><button id="start">Start game</button><small>Share the code with your friends</small></div>
+<div id="meet" class="h ov"><h2 id="mt"></h2><div id="mp"></div><div id="chat"></div><input id="ci" placeholder="Chat, press Enter" maxlength="80"></div>
+<div id="end" class="h ov"><h1 id="res"></h1><div id="rl"></div><button onclick="location.reload()">Play again</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+<script>
+const PEER_OPTS={}; // default = free PeerJS cloud signaling. Self-hosted: {host:'your.server',port:9000,path:'/'}
+const $=i=>document.getElementById(i),COLORS=['#e53935','#1e88e5','#43a047','#fdd835','#8e24aa','#f48fb1','#ff8f00','#00acc1','#6d4c41','#cfd8dc'];
+const ROOMS=[[400,60,400,240,'Cafeteria'],[60,380,260,260,'Storage'],[880,380,260,260,'Reactor'],[470,520,260,220,'Electrical'],[160,230,60,150],[160,230,240,60],[980,230,60,150],[800,230,240,60],[570,300,60,220]];
+const TASKS=[[480,120],[720,120],[120,440],[260,590],[940,440],[1080,590],[520,690],[680,690]],BTN=[600,180];
+const ok=(x,y)=>[[0,0],[12,0],[-12,0],[0,12],[0,-12]].every(([a,b])=>ROOMS.some(r=>x+a>=r[0]&&x+a<=r[0]+r[2]&&y+b>=r[1]&&y+b<=r[1]+r[3]));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+let peer,conns=[],hostConn,isHost=false,myId,myName,H={},role='crew',imps=[],myTasks=[],done=new Set(),cdEnd=0,me={x:600,y:150};
+let S={ph:'menu',pl:{},bodies:[],td:0,tt:1,chat:[],voted:{}};
+
+// ---------- networking ----------
+// Two transports: PeerJS (WebRTC) or "Relay" (MQTT public brokers, tried in order). Relay room codes are 5 characters.
+const BROKERS=['wss://mqtt.eclipseprojects.io:443/mqtt','wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'];
+let mq=null,base='',seen={},full={},pc=0,pi;
+const genCode=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
+const pub=(t,m)=>mq&&mq.connected&&mq.publish(base+t,JSON.stringify(m));
+const bc=m=>mq?pub('/s',m):conns.forEach(c=>c.open&&c.send(m));
+const send=(id,m)=>{if(id==myId)onMsg(m);else if(mq)pub('/p/'+id,m);else{const c=conns.find(c=>c.peer==id);c&&c.open&&c.send(m)}};
+const tx=m=>isHost?handle(myId,m):mq?pub('/h',{f:myId,m}):hostConn&&hostConn.open&&hostConn.send(m);
+const setName=()=>myName=($('name').value||'Player').slice(0,12);
+const NOROOM='Room not found. Check the code, and make sure the host is already on the lobby screen.';
+function init(id){if(peer)peer.destroy();setName();peer=new Peer(id,PEER_OPTS);
+ peer.on('error',e=>$('msg').textContent=e.type=='peer-unavailable'?NOROOM:/server-error|network|socket/.test(e.type)?'Cannot reach the PeerJS server. Host with "Relay" instead, or try another network.':'Error: '+e.type+' (try again)');
+ peer.on('disconnected',()=>peer.reconnect())}
+function hostPeer(){const code=genCode();init('crewgame-'+code);
+ peer.on('open',id=>{isHost=true;myId=id;S={ph:'lobby',pl:{},bodies:[],td:0,tt:1,chat:[],voted:{}};addP(id,myName);$('code').textContent=code;setInterval(tick,66)});
+ peer.on('connection',c=>{conns.push(c);c.on('data',m=>{if(m.t=='join'){if(S.ph!='lobby'||Object.keys(S.pl).length>=10)return c.send({t:'full'});addP(c.peer,String(m.n||'Player'))}else handle(c.peer,m)});c.on('close',()=>drop(c.peer))})}
+function joinPeer(){init();peer.on('open',id=>{myId=id;hostConn=peer.connect('crewgame-'+$('code2').value.trim().toUpperCase(),{serialization:'json'});
+ hostConn.on('open',()=>hostConn.send({t:'join',n:myName}));hostConn.on('data',onMsg);hostConn.on('close',()=>{if(S.ph!='menu'){alert('Disconnected from host');location.reload()}})})}
+function mqConnect(subs,onT,ready,i=0){
+ if(i>=BROKERS.length)return $('msg').textContent='No relay broker reachable. Try another network.';
+ $('msg').textContent='Connecting...';let ok=0,nx=0;
+ const c=mqtt.connect(BROKERS[i],{connectTimeout:5000,reconnectPeriod:0,clientId:'cg'+Math.random().toString(16).slice(2,10)});
+ c.on('connect',()=>{if(ok)return;ok=1;mq=c;c.options.reconnectPeriod=2000;$('msg').textContent='';c.subscribe(subs,()=>ready())});
+ c.on('message',(t,p)=>{try{onT(t,JSON.parse(p))}catch(e){}});
+ c.on('error',()=>{});
+ c.on('close',()=>{if(!ok&&!nx++){c.end(true);mqConnect(subs,onT,ready,i+1)}})}
+function hostMq(){setName();const code=genCode()+'M';base='crewgame/v1/'+code;myId='host';
+ mqConnect([base+'/h'],(t,m)=>{const f=m.f,x=m.m;if(!f||!x)return;seen[f]=Date.now();
+  if(x.t=='ping'){if(!S.pl[f]){if(S.ph!='lobby'||Object.keys(S.pl).length>=10){if(!full[f]){full[f]=1;send(f,{t:'full'})}}else addP(f,String(x.n||'Player'))}}else handle(f,x)},
+  ()=>{isHost=true;S={ph:'lobby',pl:{},bodies:[],td:0,tt:1,chat:[],voted:{}};addP(myId,myName);$('code').textContent=code;setInterval(tick,100)})}
+function joinMq(){setName();const code=$('code2').value.trim().toUpperCase();base='crewgame/v1/'+code;myId='c'+Math.random().toString(36).slice(2,8);let got=0;
+ mqConnect([base+'/s',base+'/p/'+myId],(t,m)=>{got=1;onMsg(m)},()=>{const ping=()=>pub('/h',{f:myId,m:{t:'ping',n:myName}});ping();pi=setInterval(ping,2000);
+  setTimeout(()=>{if(!got){clearInterval(pi);$('msg').textContent=NOROOM;mq.end(true);mq=null}},6000)})}
+$('host').onclick=()=>$('net').value=='mqtt'?hostMq():hostPeer();
+$('join').onclick=()=>$('code2').value.trim().length>4?joinMq():joinPeer();
+function addP(id,n){const u=Object.values(S.pl).map(p=>p.c);let c=0;while(u.includes(c))c++;S.pl[id]={n:n.slice(0,12),c,x:600,y:150,a:1}}
+function drop(id){conns=conns.filter(c=>c.peer!=id);delete S.pl[id];if(S.ph=='play'||S.ph=='meet')check()}
+function onMsg(m){if(m.t=='s')S=m.s;else if(m.t=='role'){role=m.r;myTasks=m.tk;imps=m.imps;done=new Set()}else if(m.t=='dn')done.add(m.i);
+ else if(m.t=='tp'){me.x=m.x;me.y=m.y}else if(m.t=='cd')cdEnd=Date.now()+m.ms;else if(m.t=='full'){alert('Room full or game already started');location.reload()}}
+
+// ---------- host logic (host is the referee) ----------
+function tp(){Object.keys(S.pl).forEach((id,i)=>{const p=S.pl[id];p.x=480+(i%8)*35;p.y=130+Math.floor(i/8)*40;send(id,{t:'tp',x:p.x,y:p.y})})}
+function start(){const ids=Object.keys(S.pl).sort(()=>Math.random()-.5),ni=ids.length>=7?2:1;
+ H={roles:{},tasks:{},done:{},votes:{},kcd:{},used:{}};S.tt=0;S.td=0;S.bodies=[];S.win=null;S.rl=null;
+ ids.forEach((id,i)=>{const imp=i<ni;H.roles[id]=imp?'imp':'crew';H.done[id]=new Set();S.pl[id].a=1;
+  H.tasks[id]=[...TASKS.keys()].sort(()=>Math.random()-.5).slice(0,4);if(!imp)S.tt+=4;
+  send(id,{t:'role',r:imp?'imp':'crew',tk:H.tasks[id],imps:imp?ids.slice(0,ni):[]});if(imp)send(id,{t:'cd',ms:10000})});
+ S.ph='play';tp()}
+function check(){const al=Object.keys(S.pl).filter(k=>S.pl[k].a),im=al.filter(k=>H.roles[k]=='imp').length;
+ if(!im)return endGame('Crew');if(im>=al.length-im)return endGame('Impostors');return false}
+function endGame(w){S.ph='end';S.win=w;S.rl=H.roles;return true}
+function startMeeting(){S.ph='meet';S.bodies=[];S.chat=[];S.voted={};H.votes={};H.mend=Date.now()+40000;S.tm=40;S.res=''}
+function tally(){const c={};Object.values(H.votes).forEach(v=>c[v]=(c[v]||0)+1);let top=null,mx=0,tie=false;
+ for(const k in c){if(k=='skip')continue;if(c[k]>mx){mx=c[k];top=k;tie=false}else if(c[k]==mx)tie=true}
+ if(top&&!tie&&mx>(c.skip||0)&&S.pl[top]){S.pl[top].a=0;S.res=S.pl[top].n+(H.roles[top]=='imp'?' was an Impostor.':' was not an Impostor.')}else S.res='No one was ejected.';
+ S.ph='result';H.rend=Date.now()+4000}
+function handle(id,m){const p=S.pl[id];if(!p)return;
+ if(m.t=='p'){if(S.ph=='play'&&ok(m.x,m.y)){p.x=m.x;p.y=m.y}return}
+ if(m.t=='task'){const t=TASKS[m.i];if(S.ph=='play'&&H.roles[id]=='crew'&&H.tasks[id].includes(m.i)&&!H.done[id].has(m.i)&&dist(p,{x:t[0],y:t[1]})<60){H.done[id].add(m.i);S.td++;send(id,{t:'dn',i:m.i});if(S.td>=S.tt)endGame('Crew')}return}
+ if(m.t=='kill'){if(S.ph!='play'||!p.a||H.roles[id]!='imp'||Date.now()<(H.kcd[id]||0))return;
+  const v=Object.entries(S.pl).filter(([k,q])=>q.a&&H.roles[k]=='crew'&&dist(p,q)<70).sort((a,b)=>dist(p,a[1])-dist(p,b[1]))[0];
+  if(v){const q=v[1];q.a=0;S.bodies.push({x:q.x,y:q.y,c:COLORS[q.c]});p.x=q.x;p.y=q.y;send(id,{t:'tp',x:q.x,y:q.y});H.kcd[id]=Date.now()+20000;send(id,{t:'cd',ms:20000});check()}return}
+ if(m.t=='report'){if(S.ph!='play'||!p.a)return;const nb=S.bodies.some(b=>dist(p,b)<90),eb=dist(p,{x:BTN[0],y:BTN[1]})<60&&!H.used[id];
+  if(nb||eb){if(!nb)H.used[id]=1;startMeeting()}return}
+ if(m.t=='vote'){if(S.ph!='meet'||!p.a||id in H.votes||!(m.v=='skip'||S.pl[m.v]?.a))return;H.votes[id]=m.v;S.voted[id]=1;
+  if(Object.keys(S.pl).filter(k=>S.pl[k].a).every(k=>k in H.votes))tally();return}
+ if(m.t=='chat'&&S.ph=='meet'&&p.a)S.chat.push(p.n+': '+String(m.x).slice(0,80))}
+function tick(){if(mq)for(const k in S.pl)if(k!=myId&&Date.now()-(seen[k]||0)>8000)drop(k);const p=S.pl[myId];if(p&&S.ph=='play'){p.x=me.x;p.y=me.y}
+ if(S.ph=='meet'){S.tm=Math.max(0,Math.ceil((H.mend-Date.now())/1000));if(S.tm<=0)tally()}
+ if(S.ph=='result'&&Date.now()>H.rend&&!check()){S.ph='play';tp()}
+ bc({t:'s',s:S})}
+
+// ---------- input ----------
+const keys={};let jx=0,jy=0,jo=null;
+onkeydown=e=>{if(e.target.tagName=='INPUT')return;const k=e.key.toLowerCase();keys[k]=1;if(k=='e')use();if(k=='q')tx({t:'kill'});if(k=='r'||k==' ')tx({t:'report'})};
+onkeyup=e=>delete keys[e.key.toLowerCase()];
+$('cv').addEventListener('touchstart',e=>{const t=e.touches[0];jo=[t.clientX,t.clientY]});
+$('cv').addEventListener('touchmove',e=>{if(!jo)return;const t=e.touches[0];jx=Math.max(-1,Math.min(1,(t.clientX-jo[0])/50));jy=Math.max(-1,Math.min(1,(t.clientY-jo[1])/50))});
+$('cv').addEventListener('touchend',()=>{jo=null;jx=jy=0});
+function use(){let b=-1,bd=50;myTasks.forEach(i=>{const d=Math.hypot(me.x-TASKS[i][0],me.y-TASKS[i][1]);if(!done.has(i)&&d<bd){bd=d;b=i}});if(b>=0)tx({t:'task',i:b})}
+$('bUse').onclick=use;$('bKill').onclick=()=>tx({t:'kill'});$('bRep').onclick=()=>tx({t:'report'});
+$('start').onclick=()=>Object.keys(S.pl).length<3?alert('Need at least 3 players'):start();
+$('mp').onclick=e=>{const v=e.target.dataset.v;if(v)tx({t:'vote',v})};
+$('ci').onkeydown=e=>{if(e.key=='Enter'&&e.target.value){tx({t:'chat',x:e.target.value});e.target.value=''}};
+function step(dt){if(S.ph!='play')return;let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+jx,dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+jy;
+ const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}const v=200*dt;if(ok(me.x+dx*v,me.y))me.x+=dx*v;if(ok(me.x,me.y+dy*v))me.y+=dy*v}
+setInterval(()=>{if(!isHost&&S.ph=='play'&&(!mq||(pc++&1)))tx({t:'p',x:me.x,y:me.y})},50);
+
+// ---------- rendering ----------
+const g=$('cv').getContext('2d');
+function cm(x,y,c,n,al,rd){g.globalAlpha=al?1:.4;g.fillStyle=c;g.beginPath();g.roundRect(x-13,y-18,26,32,10);g.fill();g.fillStyle='#bfe9ff';g.fillRect(x-1,y-12,11,8);
+ g.globalAlpha=1;g.fillStyle=rd?'#ff5252':'#fff';g.font='12px sans-serif';g.textAlign='center';g.fillText(n,x,y-24)}
+function draw(){g.clearRect(0,0,1200,800);g.fillStyle='#10141f';g.fillRect(0,0,1200,800);
+ ROOMS.forEach(r=>{g.fillStyle='#2b3245';g.fillRect(r[0],r[1],r[2],r[3])});
+ g.fillStyle='#8892b0';g.font='14px sans-serif';g.textAlign='left';ROOMS.forEach(r=>r[4]&&g.fillText(r[4],r[0]+8,r[1]+20));
+ g.fillStyle='#e53935';g.beginPath();g.arc(BTN[0],BTN[1],16,0,7);g.fill();
+ g.fillStyle='#ffd600';myTasks.forEach(i=>{if(!done.has(i))g.fillRect(TASKS[i][0]-9,TASKS[i][1]-9,18,18)});
+ S.bodies.forEach(b=>{g.fillStyle=b.c;g.beginPath();g.arc(b.x,b.y+6,13,Math.PI,0);g.fill()});
+ const im=S.pl[myId],al=im?im.a:1;
+ for(const k in S.pl){if(k==myId)continue;const p=S.pl[k];if(!p.a&&al)continue;cm(p.x,p.y,COLORS[p.c],p.n,p.a,role=='imp'&&imps.includes(k))}
+ if(im)cm(me.x,me.y,COLORS[im.c],im.n,al,0);
+ if(S.ph=='play'&&al){const f=g.createRadialGradient(me.x,me.y,70,me.x,me.y,300);f.addColorStop(0,'rgba(0,0,0,0)');f.addColorStop(1,'rgba(0,0,0,.95)');g.fillStyle=f;g.fillRect(0,0,1200,800)}}
+let last=performance.now();(function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;step(dt);draw();requestAnimationFrame(loop)})(last);
+
+// ---------- UI ----------
+let sig='';
+function ui(){const ph=S.ph,pl=S.pl,t=(k,v)=>$(k).classList.toggle('h',!v),play=ph=='play';
+ t('menu',ph=='menu');t('lobby',ph=='lobby');t('meet',ph=='meet'||ph=='result');t('end',ph=='end');t('hud',play);t('btns',play);
+ if(ph=='lobby'){$('plist').innerHTML=Object.values(pl).map(p=>`<li style="color:${COLORS[p.c]}">${esc(p.n)}</li>`).join('');t('start',isHost)}
+ if(play){const imp=role=='imp',cd=Math.max(0,Math.ceil((cdEnd-Date.now())/1000));
+  $('info').textContent=(imp?'IMPOSTOR':'CREWMATE')+' | Tasks '+S.td+'/'+S.tt;$('bf').style.width=100*S.td/Math.max(1,S.tt)+'%';
+  t('bUse',!imp);t('bKill',imp);$('bKill').textContent=cd?'Kill '+cd:'Kill';$('bKill').disabled=cd>0}
+ if(ph=='meet'||ph=='result'){$('mt').textContent=ph=='meet'?'Who is the impostor? '+S.tm+'s':'Vote result';
+  const s=JSON.stringify([ph,S.voted,S.chat,Object.values(pl).map(p=>p.a),S.res]);
+  if(s!=sig){sig=s;const dis=!(pl[myId]&&pl[myId].a)||S.voted[myId]?'disabled':'';
+   $('mp').innerHTML=ph=='result'?`<h3>${esc(S.res)}</h3>`:Object.keys(pl).filter(k=>pl[k].a).map(k=>`<button data-v="${k}" ${dis} style="border-left:10px solid ${COLORS[pl[k].c]}">${esc(pl[k].n)}${S.voted[k]?' (voted)':''}</button>`).join('')+`<button data-v="skip" ${dis}>Skip vote</button>`;
+   $('chat').innerHTML=S.chat.map(esc).join('<br>');$('chat').scrollTop=1e5}}
+ if(ph=='end'){$('res').textContent=S.win=='Crew'?'Crew wins!':'Impostors win!';
+  $('rl').innerHTML=Object.entries(S.rl||{}).map(([k,r])=>`<div style="color:${COLORS[pl[k]?pl[k].c:0]}">${esc(pl[k]?pl[k].n:'Left')}: ${r=='imp'?'Impostor':'Crew'}</div>`).join('')}}
+setInterval(ui,100);
+</script><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
