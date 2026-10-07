@@ -205,8 +205,7 @@ function simon(i){const b=$('mgb'),C=['#e53935','#1e88e5','#fdd835','#43a047'],s
  b.onclick=e=>{const j=e.target.dataset.j;if(lock||j==null)return;fl(+j,150);if(+j==seq[k]){if(++k==seq.length)setTimeout(()=>winGame(i),300)}else{sfx('bad');k=0;play()}}}
 function aim(i){const b=$('mgb');b.style.cssText='';let n=0,x=0,d=1;const N=2+LV();
  b.innerHTML='<p>Press STOP when the needle is in the green zone ('+N+' times)</p><div id="rail"><div style="position:absolute;left:40%;width:20%;height:100%;background:#43a047aa"></div><div id="nd" style="position:absolute;top:0;width:6px;height:100%;background:#fff"></div></div><button id="st" style="width:160px;height:60px">STOP</button><p id="an">0/'+N+'</p>';
- const nd=$('nd'),an=$('an');gi=setInterval(()=>{x+=d*(2.2+n*.8);if(x>=100||x<=0)d=-d;x=Math.max(0,Math.min(100,x));nd.style.left=x+'%'},30);
- $('st').onclick=()=>{if(x>=38&&x<=60){an.textContent=++n+'/'+N;sfx('ok');if(n==N)winGame(i)}else{sfx('bad');n=0;an.textContent='Missed! 0/'+N}}}
+ const nd=$('nd'),an=$('an');gi=setInterval(()=>{x+=d*(2.2+n*.8);if(x>=100||x<=0)d=-d;x=Math.max(0,Math.min(100,x));nd.style.left=x+'%'},30);$('st').onclick=()=>{if(x>=38&&x<=60){an.textContent=++n+'/'+N;sfx('ok');if(n==N)winGame(i)}else{sfx('bad');n=0;an.textContent='Missed! 0/'+N}}}
 function code(i){const b=$('mgb'),c=String(10**(2+LV())+Math.random()*9*10**(2+LV())|0);let v='';b.style.cssText='';
  b.innerHTML='<p>Enter this code: <b style="font-size:28px;letter-spacing:4px">'+c+'</b></p><div id="kv" style="font-size:28px;height:40px"></div><div id="kp" style="display:grid;grid-template-columns:repeat(3,70px);gap:8px;justify-content:center">'+[1,2,3,4,5,6,7,8,9,'C',0,'OK'].map(k=>'<button data-k="'+k+'">'+k+'</button>').join('')+'</div>';
  $('kp').onclick=e=>{const k=e.target.dataset.k;if(k==null)return;if(k=='C')v='';else if(k=='OK'){if(v==c)return winGame(i);sfx('bad');v=''}else if(v.length<c.length)v+=k;$('kv').textContent=v}}
@@ -271,7 +270,7 @@ function draw(){T=performance.now()/1000;NR=nearInfo();g.setTransform(DPR,0,0,DP
   g.fillStyle='#ffd600';myTasks.forEach(i=>done.has(i)||g.fillRect(mx+TASKS[i][0]*ms-2,my+TASKS[i][1]*ms-2,4,4));g.fillStyle=COLORS[im?im.c:0];g.beginPath();g.arc(mx+me.x*ms,my+me.y*ms,3.5,0,7);g.fill();g.globalAlpha=1}}
 let last=performance.now();(function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;step(dt);draw();requestAnimationFrame(loop)})(last);
 
-let sig='';
+let sig='',pn=0,pdc=0,sa=0;
 function ui(){if(S.ph!='play'&&busy)closeGame();if(S.ph!=pph){if(S.ph=='meet'){sfx('alarm');showMI()}if(S.ph=='reveal')sfx('vote');if(S.ph=='result')ejAnim();if(S.ph=='end'){sfx(wonGame()?'win':'lose');if(wonGame())addWin()}pph=S.ph}if(S.bodies.length>pb)sfx('kill');{const dc=S.dr?Object.keys(S.dr).length:0;if(dc>pdc)sfx('door');pdc=dc}pb=S.bodies.length;if(!!S.lt!=plt){sfx('lights');plt=!!S.lt}
  const ph=S.ph,pl=S.pl,t=(k,v)=>$(k).classList.toggle('h',!v),play=ph=='play';
  t('menu',ph=='menu');t('lobby',ph=='lobby');t('meet',ph=='meet'||ph=='reveal');t('ej',ph=='result');t('end',ph=='end');t('hud',play);t('btns',play);
@@ -292,7 +291,7 @@ $('emr').onclick=e=>{const q=e.target.dataset.e;if(q!=null)tx({t:'emo',e:+q})};
 function revHTML(){const v=S.vt||{},pl=S.pl,rows=Object.keys(pl).concat(['skip']).map(id=>{const vs=Object.keys(v).filter(k=>v[k]==id);return vs.length?'<div style="margin:6px 0"><b>'+(id=='skip'?'Skipped':esc(pl[id].n))+'</b> '+vs.map(k=>'<span class="swc" style="width:18px;height:18px;margin:2px;background:'+(pl[k]?COLORS[pl[k].c]:'#999')+'"></span>').join('')+' '+vs.length+'</div>':''}).join('');return rows||'<div>Nobody voted.</div>'}
 
 const CN=['Red','Blue','Green','Yellow','Purple','Pink','Orange','Cyan','Brown','Grey'],QUICK=['Where?','I saw someone','Not me','Skip vote','Sus!','Trust me','Who?','Same'];
-let wins=0,pn=0,pdc=0,sa=0;try{wins=+localStorage.getItem('cw')||0}catch(e){}
+let wins=0;try{wins=+localStorage.getItem('cw')||0}catch(e){}
 const COLREQ=[0,0,0,0,0,0,2,4,6,10],HATREQ=[0,0,1,2,3,5,8],eh=()=>wins>=HATREQ[myHat]?myHat:0,wonGame=()=>(S.win=='Crew')==(role!='imp');
 function addWin(){wins++;try{localStorage.setItem('cw',wins)}catch(e){}}
 $('qc').innerHTML=QUICK.map((q,i)=>'<button data-q="'+i+'" style="padding:6px 10px;margin:2px;font-size:13px">'+q+'</button>').join('');
