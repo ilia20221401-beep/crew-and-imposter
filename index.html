@@ -4,41 +4,67 @@
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#10141f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:#10141f;color:#f3efe6;font:16px "Trebuchet MS",Verdana,sans-serif;overflow:hidden;touch-action:none}
+html,body{
+  width:100%;
+  height:100%;
+  height:100dvh;
+  margin:0;
+  padding:0;
+  background:#10141f;
+  color:#f3efe6;
+  font:16px "Trebuchet MS",Verdana,sans-serif;
+  overflow:hidden;
+  touch-action:none;
+  position:fixed;
+}
 canvas{position:fixed;inset:0;width:100%;height:100%;object-fit:contain}
-.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(160deg,#27407af2,#4a2f78f2);z-index:5;padding:16px;text-align:center}
+.ov{
+  position:fixed;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  background:linear-gradient(160deg,#27407af2,#4a2f78f2);
+  z-index:5;
+  padding:calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  text-align:center;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
 .h{display:none!important}
-h1{font:800 44px/1 Impact,"Arial Black",sans-serif;letter-spacing:1px;margin:0;text-shadow:0 4px 0 #2b2140}
-button,input{font:inherit;padding:10px 16px;border-radius:6px;border:2px solid #f3efe6}
+h1{font:800 clamp(28px, 8vw, 44px)/1 Impact,"Arial Black",sans-serif;letter-spacing:1px;margin:0;text-shadow:0 4px 0 #2b2140}
+button,input,select{font:inherit;padding:10px 16px;border-radius:6px;border:2px solid #f3efe6;max-width:100%}
 input{background:#fff;color:#2b2140;border-radius:12px}
 button{background:#ffd54f;color:#2b2140;font-weight:800;cursor:pointer;border-radius:14px;border-color:#2b2140}
 button:disabled{opacity:.4}button:focus-visible,input:focus-visible{outline:3px solid #ffd600}
-#hud{position:fixed;top:8px;left:8px;right:8px;z-index:2;pointer-events:none}
+#hud{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));z-index:2;pointer-events:none}
 #bar{height:10px;background:#2b3245;border-radius:5px;overflow:hidden;margin-top:4px}
 #bf{height:100%;width:0;background:#43a047;transition:width .3s}
-#btns{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap-reverse;justify-content:flex-end;gap:10px;max-width:190px;z-index:3}
-#btns button{width:80px;height:80px;border-radius:50%;font-size:14px;opacity:.55;border:3px solid #fff;transition:.15s}#btns button.rdy{opacity:1;box-shadow:0 0 0 4px #fff,0 0 24px #ffd600;transform:scale(1.1)}
-#mp button{display:block;width:260px;margin:4px auto;text-align:left}
+#btns{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap-reverse;justify-content:flex-end;gap:10px;max-width:190px;z-index:3}
+#btns button{width:65px;height:65px;border-radius:50%;font-size:12px;opacity:.55;border:3px solid #fff;transition:.15s}#btns button.rdy{opacity:1;box-shadow:0 0 0 4px #fff,0 0 24px #ffd600;transform:scale(1.1)}
+#mp button{display:block;width:min(260px, 90vw);margin:4px auto;text-align:left}
 #chat{width:min(420px,90vw);height:110px;overflow:auto;background:#1d2335;border-radius:6px;padding:6px;text-align:left;font-size:14px}
-.wl,.wr{width:90px;height:26px;margin:14px 0;border-radius:6px;cursor:pointer;text-align:center;font-weight:700;color:#fff}#rail{position:relative;width:min(380px,80vw);height:70px;background:#1d2335;border-radius:10px;margin:10px auto}#card{position:absolute;left:0;top:5px;width:60px;height:60px;border-radius:8px;background:#ffd600;touch-action:none;cursor:grab}@keyframes pop{from{transform:scale(.85);opacity:0}}#meet:not(.h){animation:pop .25s}
+.wl,.wr{width:80px;height:26px;margin:14px 0;border-radius:6px;cursor:pointer;text-align:center;font-weight:700;color:#fff}#rail{position:relative;width:min(380px,80vw);height:70px;background:#1d2335;border-radius:10px;margin:10px auto}#card{position:absolute;left:0;top:5px;width:60px;height:60px;border-radius:8px;background:#ffd600;touch-action:none;cursor:grab}@keyframes pop{from{transform:scale(.85);opacity:0}}#meet:not(.h){animation:pop .25s}
 #jb,#jk{position:fixed;display:none;z-index:2;pointer-events:none;border-radius:50%}#jb{width:100px;height:100px;border:3px solid #ffffff55;background:#ffffff14}#jk{width:44px;height:44px;background:#ffffffaa}#tl{font-size:13px;margin-top:6px;text-shadow:0 1px 3px #000;line-height:1.5}
-#pv{position:static;width:120px;height:132px}.swc{display:inline-block;width:26px;height:26px;border-radius:50%;margin:3px;border:3px solid #2b2140;cursor:pointer}.swc.on{outline:3px solid #fff}#mi{background:radial-gradient(#e53935,#7a1010)!important}.mit{font:800 52px Impact,sans-serif;color:#fff;animation:pls .5s infinite alternate;text-shadow:0 5px 0 #2b2140;text-align:center}@keyframes pls{to{transform:scale(1.08) rotate(-1.5deg)}}
+#pv{position:static;width:120px;height:132px}.swc{display:inline-block;width:26px;height:26px;border-radius:50%;margin:3px;border:3px solid #2b2140;cursor:pointer}.swc.on{outline:3px solid #fff}#mi{background:radial-gradient(#e53935,#7a1010)!important}.mit{font:800 clamp(32px, 10vw, 52px) Impact,sans-serif;color:#fff;animation:pls .5s infinite alternate;text-shadow:0 5px 0 #2b2140;text-align:center}@keyframes pls{to{transform:scale(1.08) rotate(-1.5deg)}}
 </style></head><body>
 <canvas id="cv" width="1500" height="800"></canvas>
 <div id="hud" class="h"><span id="info"></span><div id="bar"><div id="bf"></div></div><div id="tl"></div></div>
 <div id="btns" class="h"><button id="bUse">Use</button><button id="bKill" style="background:#e53935;color:#fff">Kill</button><button id="bSab" style="background:#7e57c2;color:#fff">Sabotage</button><button id="bDoor" style="background:#26a69a;color:#fff">Doors</button><button id="bRep" style="background:#fb8c00">Report</button></div>
 <div id="mg" class="h ov" style="z-index:6"></div><div id="mi" class="h ov" style="z-index:8;pointer-events:none"></div><div id="ej" class="h" style="position:fixed;inset:0;z-index:5"><canvas id="ejc"></canvas><div id="ejt" style="position:fixed;left:0;right:0;bottom:12%;text-align:center;font:800 30px Impact,sans-serif;color:#fff;text-shadow:0 3px 0 #000"></div></div><div id="jb"></div><div id="jk"></div><div id="rv" class="h ov" style="z-index:7;pointer-events:none"></div>
 <div id="menu" class="ov"><h1>Crew &amp; Impostor</h1>
-<input id="name" placeholder="Your name" maxlength="12"><div id="look" style="display:flex;align-items:center;gap:12px"><canvas id="pv" width="120" height="132"></canvas><div><div id="sws" style="width:190px"></div><div><button id="hprev">&lt;</button> <b id="hname">No hat</b> <button id="hnext">&gt;</button></div><div><small id="wn"></small></div></div></div><select id="net" style="padding:10px;border-radius:6px;background:#1d2335;color:#f3efe6;border:2px solid #f3efe6"><option value="peer">PeerJS</option><option value="mqtt">Relay (if PeerJS is blocked)</option></select><button id="host">Host a game</button><label style="font-size:14px"><input type="checkbox" id="pubc"> List my game publicly (Relay, auto names, quick chat)</label><button id="find">Find public games</button><div id="rooms"></div>
+<input id="name" placeholder="Your name" maxlength="12"><div id="look" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center"><canvas id="pv" width="120" height="132"></canvas><div><div id="sws" style="max-width:190px"></div><div><button id="hprev">&lt;</button> <b id="hname">No hat</b> <button id="hnext">&gt;</button></div><div><small id="wn"></small></div></div></div><select id="net" style="padding:10px;border-radius:6px;background:#1d2335;color:#f3efe6;border:2px solid #f3efe6"><option value="peer">PeerJS</option><option value="mqtt">Relay (if PeerJS is blocked)</option></select><button id="host">Host a game</button><label style="font-size:14px;max-width:320px"><input type="checkbox" id="pubc"> List my game publicly (Relay, auto names, quick chat)</label><button id="find">Find public games</button><div id="rooms"></div>
 <div><input id="code2" placeholder="Room code" maxlength="5" style="width:130px;text-transform:uppercase"> <button id="join">Join</button></div>
-<p id="msg"></p><small>Needs 3+ players. Open extra tabs to test. Move: WASD / arrows or drag. Use: E. Kill: Q. Report: R.</small></div>
+<p id="msg"></p><small style="max-width:320px">Needs 3+ players. Open extra tabs to test. Move: WASD / arrows or drag. Use: E. Kill: Q. Report: R.</small></div>
 <div id="lobby" class="h ov"><h2>Room code: <span id="code"></span></h2><ul id="plist" style="list-style:none;padding:0;font-weight:700"></ul><select id="len" style="padding:10px;border-radius:12px;background:#fff;color:#2b2140;border:2px solid #2b2140"><option value="short">Short round</option><option value="medium">Medium round</option><option value="long" selected>Long round (15+ min)</option></select><button id="start">Start game</button><small>Share the code with your friends (3+ players)</small></div>
 <div id="meet" class="h ov"><h2 id="mt"></h2><div id="mp"></div><div id="chat"></div><div id="qc" class="h" style="max-width:420px"></div><div id="emr"></div><input id="ci" placeholder="Chat, press Enter" maxlength="80"></div>
 <div id="end" class="h ov"><h1 id="res"></h1><div id="rl"></div><button onclick="location.reload()">Play again</button></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
 <script>
-const PEER_OPTS={}; // default = free PeerJS cloud signaling. Self-hosted: {host:'your.server',port:9000,path:'/'}
+const PEER_OPTS={};
 const $=i=>document.getElementById(i),COLORS=['#e53935','#1e88e5','#43a047','#fdd835','#8e24aa','#f48fb1','#ff8f00','#00acc1','#6d4c41','#cfd8dc'];
 const ROOMS=[[400,60,400,240,'Cafeteria'],[60,380,260,260,'Storage'],[880,380,260,260,'Reactor'],[470,520,260,220,'Electrical'],[160,230,60,150],[160,230,240,60],[980,230,60,150],[800,230,240,60],[570,300,60,220],[60,60,260,160,'Medbay'],[320,100,80,60],[1240,380,200,260,'Navigation'],[1140,480,100,60],[60,860,260,200,'Lab'],[470,880,260,180,'Admin'],[1180,860,260,200,'Shields'],[160,640,60,220],[1320,640,60,220],[570,740,60,140],[320,960,150,60],[730,960,450,60],[1240,60,260,200,'Comms'],[1320,260,60,120],[1500,130,120,60],[1620,60,320,240,'Greenhouse'],[1760,300,60,120],[1620,420,320,220,'Armory'],[1440,480,180,60],[1760,640,60,220],[1620,860,320,200,'Library'],[1440,940,180,60]];const W=2000,HT=1100;
 const TASKS=[[480,120],[720,120],[120,440],[260,590],[940,440],[1080,590],[520,690],[680,690],[180,140],[1340,500],[150,940],[520,950],[680,1010],[1260,920],[1380,1000],[1300,120],[1700,160],[1860,230],[1700,540],[1860,580],[1780,960]],GAME=['wires','swipe','fuel','simon','code','wires','aim','code','aim','simon','simon','wires','swipe','fuel','code','aim','wires','simon','swipe','fuel','code'],BTN=[600,180],FIX=[600,690],VENTS=[[100,420],[500,700],[1100,420],[1400,420],[520,1030],[1400,1020],[1280,210],[1900,100],[1900,470]];
@@ -51,8 +77,6 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),esc=s=>String(s).replace(/[&<>"]/g
 let peer,conns=[],hostConn,isHost=false,myId,myName,H={},role='crew',imps=[],myTasks=[],done=new Set(),cdEnd=0,me={x:600,y:150};
 let S={ph:'menu',pl:{},bodies:[],td:0,tt:1,chat:[],voted:{}};
 
-// ---------- networking ----------
-// Two transports: PeerJS (WebRTC) or "Relay" (MQTT public brokers, tried in order). Relay room codes are 5 characters.
 const BROKERS=['wss://mqtt.eclipseprojects.io:443/mqtt','wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'];
 let MQW,hostCode;const LB='crewgame/v1/lobby/';let mq=null,base='',seen={},full={},pc=0,pi;
 const genCode=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');
@@ -92,7 +116,6 @@ function drop(id){conns=conns.filter(c=>c.peer!=id);delete S.pl[id];if(S.ph=='pl
 function onMsg(m){if(m.t=='s')S=m.s;else if(m.t=='role'){role=m.r;myTasks=m.tk;imps=m.imps;done=new Set();const r=$('rv');r.textContent=m.r=='imp'?'IMPOSTOR':'CREWMATE';r.style.cssText='z-index:7;pointer-events:none;font:800 64px Impact,sans-serif;color:'+(m.r=='imp'?'#ff5252':'#4fc3f7');r.classList.remove('h');setTimeout(()=>r.classList.add('h'),2600)}else if(m.t=='dn')done.add(m.i);
  else if(m.t=='tp'){me.x=m.x;me.y=m.y}else if(m.t=='cd')cdEnd=Date.now()+m.ms;else if(m.t=='sabcd')sabEnd=Date.now()+m.ms;else if(m.t=='dcd')doorEnd=Date.now()+m.ms;else if(m.t=='full'){alert('Room full or game already started');location.reload()}}
 
-// ---------- host logic (host is the referee) ----------
 function tp(){Object.keys(S.pl).forEach((id,i)=>{const p=S.pl[id];p.x=480+(i%8)*35;p.y=130+Math.floor(i/8)*40;send(id,{t:'tp',x:p.x,y:p.y})})}
 function start(){const ids=Object.keys(S.pl).sort(()=>Math.random()-.5),ni=ids.length>=7?2:1;
  H={roles:{},tasks:{},done:{},votes:{},kcd:{},used:{}};const LVL={short:1,medium:2,long:3}[($('len')||{}).value||'long'];S.lv=LVL;H.nt=[0,5,8,10][LVL];H.kms=[0,20000,25000,30000][LVL];H.ml=[0,45000,60000,75000][LVL];S.tt=0;S.td=0;S.bodies=[];S.win=null;S.rl=null;
@@ -129,7 +152,6 @@ function tick(){if(mq)for(const k in S.pl)if(k!=myId&&Date.now()-(seen[k]||0)>80
  if(S.ph=='reveal'&&Date.now()>H.rvend){S.ph='result';H.rend=Date.now()+6000}if(S.ph=='result'&&Date.now()>H.rend&&!check()){S.ph='play';tp()}
  bc({t:'s',s:S})}
 
-// ---------- input ----------
 const keys={};let jx=0,jy=0,jo=null;
 addEventListener('pointerdown',()=>sfx(''));
 onkeydown=e=>{sfx('');if(e.target.tagName=='INPUT')return;const k=e.key.toLowerCase();keys[k]=1;if(k=='e')use();if(k=='q')tx({t:'kill'});if(k=='f')tx({t:'sab'});if(k=='g')tx({t:'door',r:myRoom()});if(k=='r')tx({t:'report'});if(k==' ')NR.rep?tx({t:'report'}):use()};
@@ -152,17 +174,17 @@ setInterval(()=>{if(!isHost&&S.ph=='play'&&(!mq||(pc++&1)))tx({t:'p',x:me.x,y:me
 
 const inD=(x,y)=>S.dr&&Object.keys(S.dr).some(r=>DOORS[r]&&DOORS[r].some(d=>x>=d[0]-14&&x<=d[0]+d[2]+14&&y>=d[1]-14&&y<=d[1]+d[3]+14)),can=(x,y)=>ok(x,y)&&(!inD(x,y)||inD(me.x,me.y));
 function myRoom(){let b=null,bd=1e9;ROOMS.forEach(r=>{if(!r[4])return;const cx=Math.max(r[0],Math.min(me.x,r[0]+r[2])),cy=Math.max(r[1],Math.min(me.y,r[1]+r[3])),d=Math.hypot(me.x-cx,me.y-cy);if(d<bd){bd=d;b=r[4]}});return b}
-// ---------- sounds ----------
+
 const sfx=k=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();
  const P={ok:[[660,.08],[880,.12]],bad:[[160,.18]],kill:[[110,.12],[70,.3]],alarm:[[880,.15],[660,.15],[880,.15],[660,.15]],end:[[523,.12],[659,.12],[784,.25]],vent:[[300,.08],[200,.1]],lights:[[120,.35]],click:[[880,.04]],step:[[120,.025]],door:[[90,.12],[60,.2]],whoosh:[[500,.06],[350,.06],[220,.08],[120,.12]],win:[[523,.1],[659,.1],[784,.1],[1046,.25]],lose:[[392,.15],[330,.15],[262,.3]],pop:[[600,.05],[800,.06]],vote:[[700,.05],[900,.07]]}[k]||[];let t=AC.currentTime;
  P.forEach(([f,d])=>{const o=AC.createOscillator(),v=AC.createGain();o.type=k=='kill'||k=='bad'?'sawtooth':'square';o.frequency.value=f;v.gain.setValueAtTime(k=='step'?.02:.06,t);v.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(v);v.connect(AC.destination);o.start(t);o.stop(t+d);t+=d})}catch(e){}};
-// ---------- task mini-games ----------
+
 function closeGame(){clearInterval(gi);busy=0;$('mg').classList.add('h');$('mg').innerHTML=''}
 function winGame(i){sfx('ok');tx({t:'task',i});closeGame()}
 function openGame(i){busy=1;const m=$('mg');m.classList.remove('h');
  m.innerHTML='<h2>'+({wires:'Fix the wires',swipe:'Swipe the card',code:'Enter the code',fuel:'Fuel the engine',simon:'Repeat the sequence',aim:'Calibrate'})[GAME[i]]+'</h2><div id="mgb"></div><button id="mgx">Cancel</button>';$('mgx').onclick=closeGame;({wires,swipe,code,fuel,simon,aim})[GAME[i]](i)}
 function wires(i){const C=['#e53935','#1e88e5','#fdd835','#43a047'],R=[0,1,2,3].sort(()=>Math.random()-.5);let sel=-1,n=0;const b=$('mgb'),clr=()=>b.querySelectorAll('.wl').forEach(x=>x.style.outline='');
- b.style.cssText='display:flex;gap:120px;justify-content:center';
+ b.style.cssText='display:flex;gap:min(120px, 15vw);justify-content:center';
  b.innerHTML='<div>'+C.map((c,k)=>`<div class="wl" data-k="${k}" style="background:${c}"></div>`).join('')+'</div><div>'+R.map(k=>`<div class="wr" data-k="${k}" style="background:${C[k]}"></div>`).join('')+'</div>';
  b.onclick=e=>{const d=e.target;if(d.classList.contains('wl')&&!d.dataset.ok){sel=+d.dataset.k;clr();d.style.outline='3px solid #fff'}
   else if(d.classList.contains('wr')&&sel>=0&&!d.dataset.ok){if(+d.dataset.k==sel){const l=b.querySelector('.wl[data-k="'+sel+'"]');d.dataset.ok=l.dataset.ok=1;d.textContent=l.textContent='\u2713';clr();sel=-1;sfx('vent');if(++n==4)setTimeout(()=>winGame(i),250)}else{sfx('bad');sel=-1;clr()}}}}
@@ -188,9 +210,9 @@ function aim(i){const b=$('mgb');b.style.cssText='';let n=0,x=0,d=1;const N=2+LV
 function code(i){const b=$('mgb'),c=String(10**(2+LV())+Math.random()*9*10**(2+LV())|0);let v='';b.style.cssText='';
  b.innerHTML='<p>Enter this code: <b style="font-size:28px;letter-spacing:4px">'+c+'</b></p><div id="kv" style="font-size:28px;height:40px"></div><div id="kp" style="display:grid;grid-template-columns:repeat(3,70px);gap:8px;justify-content:center">'+[1,2,3,4,5,6,7,8,9,'C',0,'OK'].map(k=>'<button data-k="'+k+'">'+k+'</button>').join('')+'</div>';
  $('kp').onclick=e=>{const k=e.target.dataset.k;if(k==null)return;if(k=='C')v='';else if(k=='OK'){if(v==c)return winGame(i);sfx('bad');v=''}else if(v.length<c.length)v+=k;$('kv').textContent=v}}
-// ---------- rendering ----------
+
 const cv=$('cv'),pp={};let g=cv.getContext('2d'),T=0,CW=1,CH=1,Z=1,DPR=1,NR={t:-1};
-function fit(){DPR=Math.min(2,devicePixelRatio||1);CW=innerWidth;CH=innerHeight;cv.width=CW*DPR;cv.height=CH*DPR;Z=Math.max(.9,CH/560)}
+function fit(){DPR=Math.min(2,devicePixelRatio||1);CW=window.innerWidth;CH=window.innerHeight;cv.width=CW*DPR;cv.height=CH*DPR;Z=Math.max(.9,CH/560)}
 addEventListener('resize',fit);fit();
 const STARS=Array.from({length:90},()=>[Math.random()*(W+600)-300,Math.random()*(HT+600)-300,Math.random()*1.6+.4]);
 function mvInfo(k,x,y){const o=pp[k]||(pp[k]={x,y,f:1,t:-9});if(Math.abs(x-o.x)+Math.abs(y-o.y)>.5){o.t=T;if(Math.abs(x-o.x)>.3)o.f=x>o.x?1:-1}o.x=x;o.y=y;return o}
@@ -249,22 +271,20 @@ function draw(){T=performance.now()/1000;NR=nearInfo();g.setTransform(DPR,0,0,DP
   g.fillStyle='#ffd600';myTasks.forEach(i=>done.has(i)||g.fillRect(mx+TASKS[i][0]*ms-2,my+TASKS[i][1]*ms-2,4,4));g.fillStyle=COLORS[im?im.c:0];g.beginPath();g.arc(mx+me.x*ms,my+me.y*ms,3.5,0,7);g.fill();g.globalAlpha=1}}
 let last=performance.now();(function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;step(dt);draw();requestAnimationFrame(loop)})(last);
 
-// ---------- UI ----------
 let sig='';
 function ui(){if(S.ph!='play'&&busy)closeGame();if(S.ph!=pph){if(S.ph=='meet'){sfx('alarm');showMI()}if(S.ph=='reveal')sfx('vote');if(S.ph=='result')ejAnim();if(S.ph=='end'){sfx(wonGame()?'win':'lose');if(wonGame())addWin()}pph=S.ph}if(S.bodies.length>pb)sfx('kill');{const dc=S.dr?Object.keys(S.dr).length:0;if(dc>pdc)sfx('door');pdc=dc}pb=S.bodies.length;if(!!S.lt!=plt){sfx('lights');plt=!!S.lt}
  const ph=S.ph,pl=S.pl,t=(k,v)=>$(k).classList.toggle('h',!v),play=ph=='play';
  t('menu',ph=='menu');t('lobby',ph=='lobby');t('meet',ph=='meet'||ph=='reveal');t('ej',ph=='result');t('end',ph=='end');t('hud',play);t('btns',play);
  if(ph=='lobby'){const n=Object.keys(pl).length;if(n>pn)sfx('pop');pn=n;$('plist').innerHTML=Object.values(pl).map(p=>`<li style="color:${COLORS[p.c]}">${esc(p.n)}</li>`).join('');t('start',isHost);t('len',isHost)}
  if(play){const imp=role=='imp',cd=Math.max(0,Math.ceil((cdEnd-Date.now())/1000));
-  $('info').textContent=(imp?'IMPOSTOR':'CREWMATE')+' | Tasks '+S.td+'/'+S.tt+(S.lt?' | LIGHTS OUT: fix the green panel in Electrical':'');$('bf').style.width=100*S.td/Math.max(1,S.tt)+'%';
-  t('bUse',1);t('bKill',imp);t('bSab',imp);t('bDoor',imp);$('bUse').textContent=imp?'Vent':'Use';$('bKill').textContent=cd?'Kill '+cd:'Kill';$('bKill').disabled=cd>0;$('bSab').disabled=!!S.lt||Date.now()<sabEnd;$('bDoor').disabled=Date.now()<doorEnd;$('bUse').classList.toggle('rdy',NR.t>=0||!!NR.fix||!!NR.vent);$('bKill').classList.toggle('rdy',!!NR.kill&&cd==0);$('bRep').classList.toggle('rdy',!!NR.rep);$('tl').innerHTML=myTasks.map(i=>'<div style="opacity:'+(done.has(i)?.5:1)+'">'+(done.has(i)?'✔':'•')+' '+TN[i]+'</div>').join('')}
+  $('info').textContent=(imp?'IMPOSTOR':'CREWMATE')+' \vert{} Tasks '+S.td+'/'+S.tt+(S.lt?' \vert{} LIGHTS OUT: fix the green panel in Electrical':'');$('bf').style.width=100*S.td/Math.max(1,S.tt)+'%';
+  t('bUse',1);t('bKill',imp);t('bSab',imp);t('bDoor',imp);$('bUse').textContent=imp?'Vent':'Use';$('bKill').textContent=cd?'Kill '+cd:'Kill';$('bKill').disabled=cd>0;$('bSab').disabled=!!S.lt\vert{}\vert{}Date.now()<sabEnd;$('bDoor').disabled=Date.now()<doorEnd;$('bUse').classList.toggle('rdy',NR.t>=0\vert{}\vert{}!!NR.fix\vert{}\vert{}!!NR.vent);$('bKill').classList.toggle('rdy',!!NR.kill&&cd==0);$('bRep').classList.toggle('rdy',!!NR.rep);$('tl').innerHTML=myTasks.map(i=>'<div style="opacity:'+(done.has(i)?.5:1)+'">'+(done.has(i)?'✔':'•')+' '+TN[i]+'</div>').join('')}
  if(ph=='meet'||ph=='reveal'||ph=='result'){$('ci').classList.toggle('h',!!S.pub);$('qc').classList.toggle('h',!S.pub);$('mt').textContent=ph=='meet'?'Who is the impostor? '+S.tm+'s':ph=='reveal'?'The votes are in!':'Vote result';
   const s=JSON.stringify([ph,S.voted,S.chat,Object.values(pl).map(p=>p.a),S.res,S.vt,S.em]);
   if(s!=sig){sig=s;const dis=!(pl[myId]&&pl[myId].a)||S.voted[myId]?'disabled':'';
    $('mp').innerHTML=ph=='reveal'?revHTML():ph=='result'?`<h3>${esc(S.res)}</h3>`:Object.keys(pl).filter(k=>pl[k].a).map(k=>`<button data-v="${k}" ${dis} style="border-left:10px solid ${COLORS[pl[k].c]}">${esc(pl[k].n)}${S.voted[k]?' (voted)':''}${S.em&&S.em[k]?' '+EMO[S.em[k].e]:''}</button>`).join('')+`<button data-v="skip" ${dis}>Skip vote</button>`;
    $('chat').innerHTML=S.chat.map(esc).join('<br>');$('chat').scrollTop=1e5}}
- if(ph=='end'){$('res').textContent=S.win=='Crew'?'Crew wins!':'Impostors win!';
-  $('rl').innerHTML=Object.entries(S.rl||{}).map(([k,r])=>`<div style="color:${COLORS[pl[k]?pl[k].c:0]}">${esc(pl[k]?pl[k].n:'Left')}: ${r=='imp'?'Impostor':'Crew'}</div>`).join('')}}
+ if(ph=='end'){$('res').textContent=S.win=='Crew'?'Crew wins!':'Impostors win!';$('rl').innerHTML=Object.entries(S.rl||{}).map(([k,r])=>`<div style="color:${COLORS[pl[k]?pl[k].c:0]}">${esc(pl[k]?pl[k].n:'Left')}: ${r=='imp'?'Impostor':'Crew'}</div>`).join('')}}
 setInterval(ui,100);
 const EMO=['👍','👎','😂','😡','🤔','😱'];
 $('emr').innerHTML=EMO.map((e,i)=>'<button data-e="'+i+'" style="padding:4px 10px;margin:2px;font-size:20px">'+e+'</button>').join('');
@@ -285,15 +305,14 @@ function findGames(){setName();const L={};$('rooms').textContent='Searching...';
 $('find').onclick=findGames;
 $('rooms').onclick=e=>{const c=e.target.dataset.r;if(c){$('code2').value=c;joinMq()}};
 
-// ---------- look picker, meeting intro, ejection scene ----------
 const HATS=['No hat','Cap','Crown','Cowboy hat','Party hat','Sprout','Cat ears'];let myCol=0,myHat=0;
 $('sws').innerHTML=COLORS.map((c,i)=>'<span class="swc" data-c="'+i+'" style="background:'+c+'"></span>').join('');
 const pctx=$('pv').getContext('2d');
 function pv(){[...$('sws').children].forEach((e,i)=>{e.classList.toggle('on',i==myCol);e.style.opacity=wins>=COLREQ[i]?1:.25});$('hname').textContent=HATS[myHat]+(wins>=HATREQ[myHat]?'':' (locked: win '+HATREQ[myHat]+')');$('wn').textContent='Wins: '+wins;const G0=g;g=pctx;g.setTransform(2.4,0,0,2.4,0,0);g.clearRect(0,0,60,60);cm(25,38,COLORS[myCol],'',1,0,0,1,myHat);g=G0}
 $('sws').onclick=e=>{if(e.target.dataset.c==null)return;const c=+e.target.dataset.c;if(wins<COLREQ[c]){$('wn').textContent='Win '+COLREQ[c]+' games to unlock this colour';return}myCol=c;pv()};
-$('hprev').onclick=()=>{myHat=(myHat+6)%7;pv()};$('hnext').onclick=()=>{myHat=(myHat+1)%7;pv()};pv();
+$('hprev').onclick=()=>{myHat=(myHat+6)\%7;pv()};$('hnext').onclick=()=>{myHat=(myHat+1)%7;pv()};pv();
 function showMI(){const m=$('mi');m.innerHTML='<div class="mit">'+esc(S.mi||'MEETING')+'</div><p>'+(S.mn?'Called by '+esc(S.mn):'')+'</p>';m.classList.remove('h');setTimeout(()=>m.classList.add('h'),2200)}
-function ejAnim(){sfx('whoosh');const c=$('ejc'),x=c.getContext('2d'),W2=c.width=innerWidth,H2=c.height=innerHeight,e=S.ej,msg=S.res||'',t0=performance.now(),st=Array.from({length:80},()=>[Math.random()*W2,Math.random()*H2,Math.random()*2+.5]);
+function ejAnim(){sfx('whoosh');const c=$('ejc'),x=c.getContext('2d'),W2=c.width=window.innerWidth,H2=c.height=window.innerHeight,e=S.ej,msg=S.res||'',t0=performance.now(),st=Array.from({length:80},()=>[Math.random()*W2,Math.random()*H2,Math.random()*2+.5]);
  (function f(now){if(S.ph!='result')return;const t=(now-t0)/1000;x.setTransform(1,0,0,1,0,0);x.fillStyle='#050816';x.fillRect(0,0,W2,H2);x.fillStyle='#fff';st.forEach(q=>x.fillRect(((q[0]-t*60*q[2])%W2+W2)%W2,q[1],q[2],q[2]));
   if(e){const G0=g;g=x;x.setTransform(1,0,0,1,-80+(t/4.2)*(W2+160),H2/2+Math.sin(t*2)*30);x.rotate(t*4);x.scale(3,3);cm(0,0,COLORS[e.c],'',1,0,0,1,e.h);g=G0;x.setTransform(1,0,0,1,0,0)}
   $('ejt').textContent=msg.slice(0,Math.max(0,(t-.8)*22|0));requestAnimationFrame(f)})(t0)}
