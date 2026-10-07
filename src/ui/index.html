@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>Crew & Impostor</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#10141f">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #10141f;
+      color: #f3efe6;
+      font: 16px 'Trebuchet MS', Verdana, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(160deg, #27407af2, #4a2f78f2);
+      z-index: 5;
+      padding: 16px;
+    }
+    .hidden { display: none !important; }
+    h1 {
+      font: 800 44px/1 Impact, 'Arial Black', sans-serif;
+      letter-spacing: 1px;
+      margin: 0;
+      text-shadow: 0 4px 0 #2b2140;
+    }
+    button, input {
+      font: inherit;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: 2px solid #f3efe6;
+    }
+    input {
+      background: #fff;
+      color: #2b2140;
+      border-radius: 12px;
+    }
+    button {
+      background: #ffd54f;
+      color: #2b2140;
+      font-weight: 800;
+      cursor: pointer;
+      border-radius: 14px;
+      border-color: #2b2140;
+      transition: all 0.15s;
+    }
+    button:hover { transform: scale(1.05); }
+    button:disabled { opacity: 0.4; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #ffd600; }
+    #hud {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      z-index: 2;
+      pointer-events: none;
+      color: #f3efe6;
+      font-weight: bold;
+    }
+    #btns {
+      position: fixed;
+      right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      flex-wrap: wrap-reverse;
+      justify-content: flex-end;
+      gap: 10px;
+      max-width: 190px;
+      z-index: 3;
+    }
+    #btns button {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      font-size: 14px;
+      opacity: 0.55;
+      border: 3px solid #fff;
+      transition: 0.15s;
+    }
+    #btns button.ready {
+      opacity: 1;
+      box-shadow: 0 0 0 4px #fff, 0 0 24px #ffd600;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="cv" width="1500" height="800"></canvas>
+  <div id="hud" class="hidden">
+    <div id="info"></div>
+    <div id="bar" style="height:10px;background:#2b3245;border-radius:5px;overflow:hidden;margin-top:4px;">
+      <div id="bf" style="height:100%;width:0;background:#43a047;transition:width .3s;"></div>
+    </div>
+  </div>
+  <div id="btns" class="hidden">
+    <button id="bUse">Use</button>
+    <button id="bKill" style="background:#e53935;color:#fff">Kill</button>
+    <button id="bSab" style="background:#7e57c2;color:#fff">Sabotage</button>
+    <button id="bDoor" style="background:#ff8f00;color:#fff">Doors</button>
+    <button id="bRep" style="background:#00897b;color:#fff">Report</button>
+  </div>
+  <div id="menu" class="overlay">
+    <h1>Crew & Impostor</h1>
+    <input id="name" placeholder="Your name" maxlength="12">
+    <div id="look" style="display:flex;align-items:center;gap:12px;">
+      <canvas id="pv" width="120" height="132"></canvas>
+      <div>
+        <div id="sws" style="display:flex;flex-wrap:wrap;width:120px;"></div>
+        <div style="margin-top:8px;font-size:12px;">
+          <button id="hprev" style="width:50px;">← Hat</button>
+          <button id="hnext" style="width:50px;">Hat →</button>
+          <div id="hname" style="margin-top:4px;text-align:center;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <label style="display:block;margin-bottom:8px;">
+        <input type="radio" name="net" value="peer" checked> PeerJS (Direct)
+      </label>
+      <label style="display:block;margin-bottom:8px;">
+        <input type="radio" name="net" value="mqtt"> Relay (Public)
+      </label>
+      <label style="display:none;" id="pubcl">
+        <input type="checkbox" id="pubc" checked> List publicly
+      </label>
+    </div>
+    <button id="host" style="width:260px;margin:4px 0;">🏠 Host Game</button>
+    <div style="display:flex;gap:8px;align-items:center;justify-content:center;">
+      <input id="code2" placeholder="Room code" maxlength="5" style="width:130px;text-transform:uppercase;">
+      <button id="join" style="width:70px;">Join</button>
+    </div>
+    <button id="find" style="width:260px;margin:4px 0;background:#4a90e2;">🔍 Find Games</button>
+    <div id="rooms" style="font-size:12px;max-width:400px;max-height:150px;overflow-y:auto;"></div>
+    <p id="msg" style="font-size:12px;color:#ffeb3b;"></p>
+    <small style="font-size:11px;text-align:center;line-height:1.4;">
+      Needs 3+ players. Move: WASD/arrows or drag. Use: E. Kill: Q. Report: R.
+      <br>Open extra tabs to test locally.
+    </small>
+  </div>
+  <div id="lobby" class="overlay hidden">
+    <h2>Room code: <span id="code" style="color:#ffd600;"></span></h2>
+    <ul id="plist" style="list-style:none;padding:0;font-weight:700;max-height:150px;overflow-y:auto;"></ul>
+    <select id="len" style="padding:10px;border-radius:12px;border:2px solid #f3efe6;background:#fff;color:#2b2140;margin:8px 0;">
+      <option value="short">Short (1 Impostor)</option>
+      <option value="medium">Medium (1 Impostor)</option>
+      <option value="long" selected>Long (2 Impostors)</option>
+    </select>
+    <button id="start" style="width:260px;">▶ Start Game</button>
+    <button onclick="location.reload()" style="width:260px;background:#666;">← Back</button>
+  </div>
+  <div id="meet" class="overlay hidden">
+    <h2 id="mt">Who is the impostor? 60s</h2>
+    <div id="mp" style="display:flex;flex-direction:column;max-height:200px;overflow-y:auto;"></div>
+    <div id="chat" style="width:min(420px,90vw);height:110px;overflow:auto;background:#1d2335;border-radius:6px;padding:6px;text-align:left;font-size:14px;"></div>
+    <div id="qc" style="margin-top:8px;"></div>
+    <div id="emr" style="margin-top:8px;"></div>
+    <input id="ci" placeholder="Chat, press Enter" style="width:min(420px,90vw);margin-top:8px;">
+  </div>
+  <div id="end" class="overlay hidden">
+    <h1 id="res" style="font-size:36px;"></h1>
+    <div id="rl" style="text-align:left;max-height:200px;overflow-y:auto;margin:16px 0;"></div>
+    <button onclick="location.reload()" style="width:200px;">🎮 Play Again</button>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"></script>
+  <script type="module" src="/src/main.ts"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

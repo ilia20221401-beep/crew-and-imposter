@@ -1,5 +1,3 @@
-// ============ AUDIO/SFX ENGINE ============
-
 interface SoundEffect {
   frequencies: Array<[number, number]>;
   type: 'sine' | 'square' | 'sawtooth';
@@ -24,42 +22,24 @@ let audioContext: AudioContext | null = null;
 export function playSound(soundId: string = ''): void {
   try {
     audioContext = audioContext || new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    if (audioContext.state === 'suspended') {
-      audioContext.resume();
-    }
+    if (audioContext.state === 'suspended') audioContext.resume();
 
     const sfx = SFX_LIBRARY[soundId] || SFX_LIBRARY.click;
     const now = audioContext.currentTime;
 
     sfx.frequencies.forEach(([frequency, duration]) => {
-      const oscillator = audioContext!.createOscillator();
+      const osc = audioContext!.createOscillator();
       const gain = audioContext!.createGain();
-
-      oscillator.type = sfx.type;
-      oscillator.frequency.value = frequency;
-
+      osc.type = sfx.type;
+      osc.frequency.value = frequency;
       gain.gain.setValueAtTime(soundId === 'step' ? 0.02 : 0.06, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-
-      oscillator.connect(gain);
+      osc.connect(gain);
       gain.connect(audioContext!.destination);
-
-      oscillator.start(now);
-      oscillator.stop(now + duration);
+      osc.start(now);
+      osc.stop(now + duration);
     });
   } catch (e) {
     console.error('Audio error:', e);
-  }
-}
-
-export function initAudio(): void {
-  // Initialize audio context on first user interaction
-  if (!audioContext) {
-    try {
-      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    } catch (e) {
-      console.warn('AudioContext not available');
-    }
   }
 }
